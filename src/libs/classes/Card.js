@@ -18,6 +18,14 @@ class Card {
 
       return rankOrder[this.rank] === rankOrder[other.rank] - 1;
    }
+
+   isSameColor (other) {
+      return this.color === other.color;
+   }
+
+   isSameSuit (other) {
+      return this.suit === other.suit;
+   }
 }
 
 export default Card;

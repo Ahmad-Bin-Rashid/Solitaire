@@ -34,7 +34,6 @@ class Queue {
    // Peek at the front element of the queue
    peek() {
        if (this.isEmpty()) {
-           console.log("Queue is empty");
            return null;
        }
        return this.front.card;

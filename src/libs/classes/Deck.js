@@ -37,7 +37,11 @@ class Deck {
    }
 
    display() {
-      console.log(this.cards);
+      for (let i = 0; i < this.cards.length; i++) {
+         
+         console.log(this.cards[i]);
+         
+      }
    }
 
 }

@@ -38,7 +38,6 @@ class Stack {
 
     peek() {
         if (this.isEmpty()) {
-            console.log("Stack is empty");
             return null;
         }
         return this.top.card;
@@ -49,7 +48,7 @@ class Stack {
         return this.top === null;
     }
 
-    display() {
+    getCards() {
         let current = this.top;
         let elements = [];
         while (current) {
@@ -57,8 +56,7 @@ class Stack {
             current = current.next;
         }
         elements = elements.reverse();
-        
-        console.log(elements);
+        return (elements == []) ? null : elements;
     }
 }
 

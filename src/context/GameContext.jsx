@@ -9,8 +9,13 @@ const initialState = new Game();
 
 const gameReducer = (state, action) => {
    switch (action.type) {
-      case 'MOVE':
-         return state;
+      case 'FROM_STOCK_TO_WASTE':
+         console.log(action)
+         return {...state, stockPile: action.payload.stockPile, wastePile: action.payload.wastePile};
+         
+      case 'FROM_WASTE':
+         console.log(action)
+         return {...state, tableauPiles: action.payload.tableauPiles, foundationPiles: action.payload.foundationPiles, wastePile: action.payload.wastePile};
          
    
       default:
@@ -26,7 +31,6 @@ export const GameProvider = ({ children }) => {
 
    return (
       <GameContext.Provider value={{ state, dispatch }}>
-         
          {children}
       </GameContext.Provider>
    )
