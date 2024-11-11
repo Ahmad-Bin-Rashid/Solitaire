@@ -53,6 +53,10 @@ function validWasteToTableau(tableauPiles, wastePile) {
 }
 
 function validWasteToFoundation(foundations, wastePile) {
+   if (wastePile.peek().rank == 'Ace') {
+      const card = wastePile.peek();
+      return card.suit;
+   }
    if (foundations.Hearts.peek() || foundations.Diamonds.peek() || foundations.Spades.peek() || foundations.Clubs.peek()) {
       if (foundations.Hearts.peek()) {
          const card1 = foundations.Hearts.peek();
@@ -86,9 +90,8 @@ function validWasteToFoundation(foundations, wastePile) {
             return card1.suit;
          }
       }
-   } else if (wastePile.peek().rank == 'Ace') {
-      const card = wastePile.peek();
-      return card.suit;
    }
    return null
 }
+
+// function moveFromTableau ()

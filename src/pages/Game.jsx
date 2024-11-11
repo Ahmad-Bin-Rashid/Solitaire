@@ -56,7 +56,7 @@ const Game = () => {
 
         <HStack w={'60%'} h={'auto'} align={'start'} spacing={4}>
           {tableauPiles && tableauPiles.map((pile) => (
-            <Box key={pile.top.card.rank + pile.top.card.suit} ><Tableau cards={pile} /></Box>
+            <Box key={pile.top.card.rank + pile.top.card.suit}><Tableau cards={pile} /></Box>
           ))}
         </HStack>
       </VStack>
