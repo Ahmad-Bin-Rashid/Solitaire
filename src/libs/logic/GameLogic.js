@@ -61,21 +61,24 @@ function validWasteToFoundation(foundations, wastePile) {
          if (card1.isRankLower(card2) && card1.isSameSuit(card2)) {
             return card1.suit;
          }
-      } else if (foundations.Diamonds.peek()) {
+      } 
+      if (foundations.Diamonds.peek()) {
          const card1 = foundations.Diamonds.peek();
          const card2 = wastePile.peek();
 
          if (card1.isRankLower(card2) && card1.isSameSuit(card2)) {
             return card1.suit;
          }
-      } else if (foundations.Spades.peek()) {
+      } 
+      if (foundations.Spades.peek()) {
          const card1 = foundations.Spades.peek();
          const card2 = wastePile.peek();
 
          if (card1.isRankLower(card2) && card1.isSameSuit(card2)) {
             return card1.suit;
          }
-      } else if (foundations.Clubs.peek()) {
+      } 
+      if (foundations.Clubs.peek()) {
          const card1 = foundations.Clubs.peek();
          const card2 = wastePile.peek();
 
