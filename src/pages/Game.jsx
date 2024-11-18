@@ -14,7 +14,7 @@ const Game = () => {
   const handleStockPile = () => {
 
     stockPile, wastePile = moveStockToWaste(stockPile, wastePile)
-    console.log(stockPile, wastePile)
+  
     dispatch({ type: 'FROM_STOCK_TO_WASTE', payload: { stockPile, wastePile } })
   }
 
@@ -56,7 +56,8 @@ const Game = () => {
 
         <HStack w={'60%'} h={'auto'} align={'start'} spacing={4}>
           {tableauPiles && tableauPiles.map((pile) => (
-            <Box key={pile.top.card.rank + pile.top.card.suit}><Tableau cards={pile} /></Box>
+            <Box key={pile.top?.card ? pile.top.card.rank + pile.top.card.suit : (Math.random()*100).toString()}><Tableau cards={pile} /></Box>
+            
           ))}
         </HStack>
       </VStack>

@@ -6,8 +6,12 @@ class Card {
       this.color = (suit === "Hearts" || suit === "Diamonds") ? "red" : "black";
    }
 
-   flip() {
-      this.faceUp = !this.faceUp;
+   faceUpCard() {
+      this.faceUp = true;
+   }
+
+   faceDownCard() {
+      this.faceUp = false;
    }
 
    isRankLower (other) {
@@ -17,6 +21,10 @@ class Card {
       };
 
       return rankOrder[this.rank] === rankOrder[other.rank] - 1;
+   }
+
+   isKing() {
+      return this.rank === "King";
    }
 
    isSameColor (other) {

@@ -24,7 +24,7 @@ class Game {
          for (let j = 0; j < i + 1; j++) {
             const card = this.deck.deal();
             if (i === j && card instanceof Card) {
-               card.flip();
+               card.faceUpCard();
             }
             this.tableauPiles[i].push(card);
          }

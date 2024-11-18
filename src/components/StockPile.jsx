@@ -2,7 +2,6 @@
 import { Image } from "@chakra-ui/react"
 
 const StockPile = ({cards}) => {
-   console.log(cards)
   return (
     <Image 
       src={cards.isEmpty() ? "blank-card.png" : "card-bg.png"}

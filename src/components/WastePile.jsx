@@ -2,7 +2,6 @@
 import { Image } from "@chakra-ui/react"
 
 const WastePile = ({cards}) => {
-   console.log(cards)
   return (
    <Image 
       src={cards.peek() ? `${cards.peek().rank}-${cards.peek().suit}.png` : 'blank-card.png'} 
