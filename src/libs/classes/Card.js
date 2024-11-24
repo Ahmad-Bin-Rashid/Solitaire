@@ -24,6 +24,7 @@ class Card {
    }
 
    isKing() {
+      console.log(this.rank === "King")
       return this.rank === "King";
    }
 

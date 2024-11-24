@@ -2,6 +2,7 @@
 import { Image } from "@chakra-ui/react"
 
 const Foundation = ({ cards }) => {
+
    return (
       <Image
          src={cards.peek() ? `${cards.peek().rank}-${cards.peek().suit}.png` : 'blank-card.png'}
@@ -9,6 +10,7 @@ const Foundation = ({ cards }) => {
          width={'auto'}
          cursor={cards.peek() ? 'pointer' : 'default'}
          _hover={cards.peek() ? { shadow: '2xl', border: '1px', borderColor: 'brown' } : {}}
+
       />
    )
 }

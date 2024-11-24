@@ -20,6 +20,10 @@ const gameReducer = (state, action) => {
       case 'FROM_TABLEAU':
          console.log(action)
          return {...state, tableauPiles: action.payload.tableauPiles, foundationPiles: action.payload.foundationPiles};
+      
+         case 'FROM_FOUNDATION':
+         console.log(action)
+         return {...state, tableauPiles: action.payload.tableauPiles, foundationPiles: action.payload.foundationPiles};
          
    
       default:

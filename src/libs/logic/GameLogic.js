@@ -18,9 +18,7 @@ export function moveStockToWaste(stockPile, wastePile) {
 export function moveFromWaste(tableauPiles, foundations, wastePile) {
    const foundationSuit = validWasteToFoundation(foundations, wastePile);
 
-   const start = 0;
-   const end = tableauPiles.length;
-   const tableauIndex = validMoveToTableau(start, end, wastePile.peek(), tableauPiles);
+
 
    if (foundationSuit) {
       const card = wastePile.pop();
@@ -34,10 +32,18 @@ export function moveFromWaste(tableauPiles, foundations, wastePile) {
       } else if (foundationSuit == 'Clubs') {
          foundations.Clubs.push(card);
       }
-   } else if (tableauIndex) {
-      const card = wastePile.pop();
-      card.faceUpCard()
-      tableauPiles[tableauIndex].push(card)
+   } 
+   else {
+      const start = 0;
+      const end = tableauPiles.length;
+      const tableauIndex = validMoveToTableau(start, end, wastePile.peek(), tableauPiles);
+
+      if (tableauIndex != null) {
+         const card = wastePile.pop();
+         card.faceUpCard()
+         console.log(tableauIndex, card)
+         tableauPiles[tableauIndex].push(card)
+      }
    }
 
    return tableauPiles, foundations, wastePile
@@ -111,23 +117,23 @@ function validWasteToFoundation(foundations, wastePile) {
 
 export function moveFromTableau(card, tableau, tableauPiles, foundations) {
    if (tableau.top.card == card) {
-      
+
       const start = tableauPiles.indexOf(tableau);
       const end = tableauPiles.length;
       const tableauIndex = validMoveToTableau(start, end, tableau.peek(), tableauPiles);
 
       if (!tableauIndex) {
-         
+
          const foundationSuit = validTableauToFoundation(tableau, foundations);
 
          if (!foundationSuit) {
-            
+
             const start = 0;
             const end = tableauPiles.indexOf(tableau);
             const tableauIndex2 = validMoveToTableau(start, end, tableau.peek(), tableauPiles);
 
             if (tableauIndex2 != null) {
-               
+
                tableauPiles[tableauIndex2].push(tableau.pop())
                tableau.peek()?.faceUpCard();
             }
@@ -226,4 +232,42 @@ function validTableauToFoundation(tableau, foundations) {
       }
    }
    return null
+}
+
+
+export function moveFromFoundation(card, tableauPiles, foundations) {
+   const start = 0;
+   const end = tableauPiles.length;
+   const tableauIndex = validMoveToTableau(start, end, card, tableauPiles);
+
+   if (card.suit == 'Hearts') {
+      tableauPiles[tableauIndex].push(foundations.Hearts?.pop())
+   }
+   else if (card.suit == 'Diamonds') {
+      tableauPiles[tableauIndex].push(foundations.Diamonds?.pop())
+   }
+   else if (card.suit == 'Clubs') {
+      tableauPiles[tableauIndex].push(foundations.Clubs?.pop())
+   }
+   else if (card.suit == 'Spades') {
+      tableauPiles[tableauIndex].push(foundations.Spades?.pop())
+   }
+
+   return tableauPiles, foundations;
+}
+
+
+export function checkWin (tableauPiles, wastePile, stockPile) {
+   if (!wastePile.peek() && !stockPile.peek()) {
+      for(const tableau in tableauPiles) {
+         const cards = tableau.getCards();
+         for (const { card } in cards) {
+            if (!card.faceUp) {
+               return false;
+            }
+         }
+      }
+      return true;
+   }
+   return false;
 }

@@ -17,9 +17,6 @@ class Stack {
         }
     }
 
-    pushMultiple() {
-
-    }
 
     pop() {
         if (this.isEmpty()) {
@@ -30,11 +27,7 @@ class Stack {
         this.top = this.top.next;
         return poppedCard;
     }
-
-    popMultiple() {
-
-    }
-
+    
 
     peek() {
         if (this.isEmpty()) {
