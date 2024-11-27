@@ -63,7 +63,7 @@ const Home = () => {
                      borderRadius="xl"
                      _hover={{ bg: 'rgba(255,255,255,0.1)' }}
                   >
-                     Instructions
+                     How to Play
                   </Button>
                </VStack>
             </VStack>
