@@ -1,15 +1,12 @@
 /* eslint-disable react/prop-types */
-import { Image } from "@chakra-ui/react"
+import PlayingCard from "./PlayingCard"
 
 const StockPile = ({cards}) => {
   return (
-    <Image 
+    <PlayingCard
       src={cards.isEmpty() ? "blank-card.png" : "card-bg.png"}
-      h={'130px'} 
-      width={'auto'}
-      cursor={'pointer'}
-      _hover={cards.peek() ? { shadow: '2xl', border: '1px', borderColor: 'brown' } : {}}
-      />
+      isClickable
+    />
   )
 }
 

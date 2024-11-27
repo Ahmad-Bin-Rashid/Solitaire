@@ -1,52 +1,59 @@
-import { Image } from "@chakra-ui/react"
+import { Box, useBreakpointValue } from "@chakra-ui/react"
 import useGameState from "../hooks/useGameState";
-import { checkWin, moveFromTableau } from "../libs/logic/GameLogic";
+import { moveFromTableau } from "../libs/logic/GameLogic";
+import PlayingCard from "./PlayingCard";
+import { CARD_PRESETS } from "../styles/cardStyles";
 
 
-const Tableau = (pile) => {
+const Tableau = ({ cards: pile, onMoveComplete }) => {
 
    const { state, dispatch } = useGameState();
+   const cardMetrics = useBreakpointValue(CARD_PRESETS) ?? CARD_PRESETS.md;
 
-   const cards = pile.cards.getCards()
+   const cards = pile.getCards() ?? []
+   const cardSpacing = cardMetrics.stackGap
+   const pileHeight = cards.length > 0
+      ? cardMetrics.cardHeight + (cards.length - 1) * cardSpacing
+      : cardMetrics.cardHeight
 
    const handleClick = (card) => {
       let tableauPiles = state.tableauPiles
       let wastePile = state.wastePile
       let stockPile = state.stockPile
 
-      if (!checkWin(tableauPiles, wastePile, stockPile)) {
-         if (card.faceUp) {
-            let foundationPiles = state.foundationPiles
-            tableauPiles, foundationPiles = moveFromTableau(card, pile.cards, tableauPiles, foundationPiles)
+      if (card.faceUp) {
+         let foundationPiles = state.foundationPiles
+         const moved = moveFromTableau(card, pile, tableauPiles, foundationPiles)
+
+         if (moved) {
             dispatch({ type: 'FROM_TABLEAU', payload: { tableauPiles, foundationPiles } })
+            onMoveComplete?.()
          }
       }
    }
    return (
-      <>
-         {pile.cards.peek() ? (cards.map(({ card, index }) => (
-            <Image
+      <Box position="relative" minH={`${pileHeight}px`} width={`${cardMetrics.cardWidth}px`} flex="0 0 auto">
+         {pile.peek() ? cards.map(({ card }, index) => (
+            <PlayingCard
                key={card.rank + card.suit}
-               src={card ? (card.faceUp ? `${card.rank}-${card.suit}.png` : "card-bg.png") : 'blank-card.png'}
-               height={'120px'}
-               width={'auto'}
-               cursor={card.faceUp ? 'pointer' : 'default'}
-               _hover={card.faceUp ? { shadow: '2xl', border: '1px', borderColor: 'brown' } : {}}
+               src={card.faceUp ? `${card.rank}-${card.suit}.png` : 'card-bg.png'}
+               position="absolute"
+               top={`${index * cardSpacing}px`}
+               left="0"
+               zIndex={index + 1}
+               metrics={cardMetrics}
+               isClickable={card.faceUp}
                onClick={() => handleClick(card)}
-               // position={'absolute'}
-               top={`${index + 30}px`}
-               zIndex={index}
             />
 
-         ))) :
-            (<Image
+         )) : (
+            <PlayingCard
                src={'blank-card.png'}
-               height={'120px'}
-               width={'auto'}
-               cursor={'default'}
-            />)
-         }
-      </>
+               metrics={cardMetrics}
+               isClickable={false}
+            />
+         )}
+      </Box>
    )
 }
 

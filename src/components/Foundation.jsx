@@ -1,16 +1,11 @@
 /* eslint-disable react/prop-types */
-import { Image } from "@chakra-ui/react"
+import PlayingCard from "./PlayingCard"
 
 const Foundation = ({ cards }) => {
-
    return (
-      <Image
+      <PlayingCard
          src={cards.peek() ? `${cards.peek().rank}-${cards.peek().suit}.png` : 'blank-card.png'}
-         height={'120px'}
-         width={'auto'}
-         cursor={cards.peek() ? 'pointer' : 'default'}
-         _hover={cards.peek() ? { shadow: '2xl', border: '1px', borderColor: 'brown' } : {}}
-
+         isClickable={Boolean(cards.peek())}
       />
    )
 }

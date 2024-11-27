@@ -1,273 +1,187 @@
-import Stack from "../classes/Stack";
+function getFoundationStack(foundations, suit) {
+   return foundations[suit] ?? null
+}
 
+function canPlaceOnFoundation(card, foundationStack) {
+   if (!foundationStack) {
+      return false
+   }
+
+   const foundationTop = foundationStack.peek()
+
+   if (!foundationTop) {
+      return card.rank === 'Ace'
+   }
+
+   return foundationTop.isSameSuit(card) && foundationTop.isRankLower(card)
+}
+
+function canPlaceOnTableau(card, tableauStack) {
+   const tableauTop = tableauStack.peek()
+
+   if (!tableauTop) {
+      return card.rank === 'King'
+   }
+
+   return card.isRankLower(tableauTop) && !card.isSameColor(tableauTop)
+}
+
+function findValidTableauIndex(card, tableauPiles, sourceIndex = -1) {
+   for (let i = 0; i < tableauPiles.length; i++) {
+      if (i === sourceIndex) {
+         continue
+      }
+
+      if (canPlaceOnTableau(card, tableauPiles[i])) {
+         return i
+      }
+   }
+
+   return -1
+}
+
+function canMoveSequenceToTableau(sequence) {
+   if (!sequence.length) {
+      return false
+   }
+
+   for (let i = 0; i < sequence.length; i++) {
+      const currentCard = sequence[i]
+
+      if (!currentCard.faceUp) {
+         return false
+      }
+
+      if (i > 0) {
+         const previousCard = sequence[i - 1]
+
+         if (!currentCard.isRankLower(previousCard) || currentCard.isSameColor(previousCard)) {
+            return false
+         }
+      }
+   }
+
+   return true
+}
+
+function revealTopCard(tableau) {
+   tableau.peek()?.faceUpCard()
+}
 
 export function moveStockToWaste(stockPile, wastePile) {
    if (!stockPile.isEmpty()) {
-      const card = stockPile.dequeue();
-      wastePile.push(card);
-   } else {
-      while (!wastePile.isEmpty()) {
-         const card = wastePile.pop();
-         stockPile.enqueue(card);
-      }
+      const card = stockPile.dequeue()
+      card.faceUpCard()
+      wastePile.push(card)
+      return true
    }
-   return stockPile, wastePile
-}
 
+   if (wastePile.isEmpty()) {
+      return false
+   }
+
+   const recycledCards = []
+
+   while (!wastePile.isEmpty()) {
+      const card = wastePile.pop()
+      card.faceDownCard()
+      recycledCards.unshift(card)
+   }
+
+   recycledCards.forEach((card) => stockPile.enqueue(card))
+   return true
+}
 
 export function moveFromWaste(tableauPiles, foundations, wastePile) {
-   const foundationSuit = validWasteToFoundation(foundations, wastePile);
+   const card = wastePile.peek()
 
-
-
-   if (foundationSuit) {
-      const card = wastePile.pop();
-      card.faceUpCard()
-      if (foundationSuit == 'Hearts') {
-         foundations.Hearts.push(card);
-      } else if (foundationSuit == 'Diamonds') {
-         foundations.Diamonds.push(card);
-      } else if (foundationSuit == 'Spades') {
-         foundations.Spades.push(card);
-      } else if (foundationSuit == 'Clubs') {
-         foundations.Clubs.push(card);
-      }
-   } 
-   else {
-      const start = 0;
-      const end = tableauPiles.length;
-      const tableauIndex = validMoveToTableau(start, end, wastePile.peek(), tableauPiles);
-
-      if (tableauIndex != null) {
-         const card = wastePile.pop();
-         card.faceUpCard()
-         console.log(tableauIndex, card)
-         tableauPiles[tableauIndex].push(card)
-      }
+   if (!card) {
+      return false
    }
 
-   return tableauPiles, foundations, wastePile
+   const foundationStack = getFoundationStack(foundations, card.suit)
+
+   if (canPlaceOnFoundation(card, foundationStack)) {
+      foundationStack.push(wastePile.pop())
+      return true
+   }
+
+   const tableauIndex = findValidTableauIndex(card, tableauPiles)
+
+   if (tableauIndex !== -1) {
+      tableauPiles[tableauIndex].push(wastePile.pop())
+      return true
+   }
+
+   return false
 }
-
-
-function validMoveToTableau(start, end, card1, tableauPiles) {
-   for (let i = start; i < end; i++) {
-      if (tableauPiles[i].getCards() != null) {
-         // const card1 = pile.peek();
-         const card2 = tableauPiles[i].peek();
-         if (card2) {
-            if (card1.isRankLower(card2) && !card1.isSameColor(card2)) {
-               console.log(i)
-               return i;
-            }
-
-         }
-      }
-      if (tableauPiles[i].peek() == null) {
-         if (card1.isKing()) {
-            return i;
-         }
-      }
-   }
-   return null;
-}
-
-function validWasteToFoundation(foundations, wastePile) {
-   if (wastePile.peek().rank == 'Ace') {
-      const card = wastePile.peek();
-      return card.suit;
-   }
-   if (foundations.Hearts.peek() || foundations.Diamonds.peek() || foundations.Spades.peek() || foundations.Clubs.peek()) {
-      if (foundations.Hearts.peek()) {
-         const card1 = foundations.Hearts.peek();
-         const card2 = wastePile.peek();
-
-         if (card1.isRankLower(card2) && card1.isSameSuit(card2)) {
-            return card1.suit;
-         }
-      }
-      if (foundations.Diamonds.peek()) {
-         const card1 = foundations.Diamonds.peek();
-         const card2 = wastePile.peek();
-
-         if (card1.isRankLower(card2) && card1.isSameSuit(card2)) {
-            return card1.suit;
-         }
-      }
-      if (foundations.Spades.peek()) {
-         const card1 = foundations.Spades.peek();
-         const card2 = wastePile.peek();
-
-         if (card1.isRankLower(card2) && card1.isSameSuit(card2)) {
-            return card1.suit;
-         }
-      }
-      if (foundations.Clubs.peek()) {
-         const card1 = foundations.Clubs.peek();
-         const card2 = wastePile.peek();
-
-         if (card1.isRankLower(card2) && card1.isSameSuit(card2)) {
-            return card1.suit;
-         }
-      }
-   }
-   return null
-}
-
 
 export function moveFromTableau(card, tableau, tableauPiles, foundations) {
-   if (tableau.top.card == card) {
+   const tableauCards = tableau.getCards() ?? []
+   const sourceIndex = tableauPiles.indexOf(tableau)
+   const movingIndex = tableauCards.findIndex((node) => node.card === card)
 
-      const start = tableauPiles.indexOf(tableau);
-      const end = tableauPiles.length;
-      const tableauIndex = validMoveToTableau(start, end, tableau.peek(), tableauPiles);
-
-      if (!tableauIndex) {
-
-         const foundationSuit = validTableauToFoundation(tableau, foundations);
-
-         if (!foundationSuit) {
-
-            const start = 0;
-            const end = tableauPiles.indexOf(tableau);
-            const tableauIndex2 = validMoveToTableau(start, end, tableau.peek(), tableauPiles);
-
-            if (tableauIndex2 != null) {
-
-               tableauPiles[tableauIndex2].push(tableau.pop())
-               tableau.peek()?.faceUpCard();
-            }
-
-         } else {
-            const card = tableau.pop();
-            if (foundationSuit == 'Hearts') {
-               foundations.Hearts.push(card);
-            } else if (foundationSuit == 'Diamonds') {
-               foundations.Diamonds.push(card);
-            } else if (foundationSuit == 'Spades') {
-               foundations.Spades.push(card);
-            } else if (foundationSuit == 'Clubs') {
-               foundations.Clubs.push(card);
-            }
-            tableau.peek()?.faceUpCard();
-         }
-      } else {
-         tableauPiles[tableauIndex].push(tableau.pop())
-         tableau.peek()?.faceUpCard();
-      }
-
-   } else {
-      const start = tableauPiles.indexOf(tableau);
-      const end = tableauPiles.length;
-      const tableauIndex3 = validMoveToTableau(start, end, card, tableauPiles);
-
-      if (tableauIndex3) {
-         const temp = new Stack()
-         while (temp.peek() != card) {
-            temp.push(tableau.pop())
-         }
-         tableau.peek()?.faceUpCard();
-
-         while (temp.peek() != null) {
-            tableauPiles[tableauIndex3].push(temp.pop())
-         }
-      } else {
-         const start = 0;
-         const end = tableauPiles.indexOf(tableau);
-         const tableauIndex4 = validMoveToTableau(start, end, card, tableauPiles);
-
-         if (tableauIndex4 != null) {
-            const temp = new Stack()
-            while (temp.peek() != card) {
-               temp.push(tableau.pop())
-            }
-            tableau.peek()?.faceUpCard();
-
-            while (temp.peek() != null) {
-               tableauPiles[tableauIndex4].push(temp.pop())
-            }
-         }
-      }
-
-
+   if (movingIndex === -1) {
+      return false
    }
-   return tableauPiles, foundations
+
+   const movingCards = tableauCards.slice(movingIndex).map((node) => node.card)
+
+   if (!canMoveSequenceToTableau(movingCards)) {
+      return false
+   }
+
+   if (movingCards.length === 1) {
+      const foundationStack = getFoundationStack(foundations, card.suit)
+
+      if (canPlaceOnFoundation(card, foundationStack)) {
+         foundationStack.push(tableau.pop())
+         revealTopCard(tableau)
+         return true
+      }
+   }
+
+   const targetIndex = findValidTableauIndex(movingCards[0], tableauPiles, sourceIndex)
+
+   if (targetIndex === -1) {
+      return false
+   }
+
+   const cardsToMove = []
+
+   for (let i = 0; i < movingCards.length; i++) {
+      cardsToMove.unshift(tableau.pop())
+   }
+
+   cardsToMove.forEach((movingCard) => {
+      tableauPiles[targetIndex].push(movingCard)
+   })
+
+   revealTopCard(tableau)
+   return true
 }
-
-
-
-function validTableauToFoundation(tableau, foundations) {
-   const card2 = tableau.peek();
-   if (card2.rank == 'Ace') {
-      return card2.suit;
-   }
-   if (foundations.Hearts.peek() || foundations.Diamonds.peek() || foundations.Spades.peek() || foundations.Clubs.peek()) {
-      if (foundations.Hearts.peek()) {
-         const card1 = foundations.Hearts.peek();
-
-         if (card1.isRankLower(card2) && card1.isSameSuit(card2)) {
-            return card1.suit;
-         }
-      }
-      if (foundations.Diamonds.peek()) {
-         const card1 = foundations.Diamonds.peek();
-
-         if (card1.isRankLower(card2) && card1.isSameSuit(card2)) {
-            return card1.suit;
-         }
-      }
-      if (foundations.Spades.peek()) {
-         const card1 = foundations.Spades.peek();
-
-         if (card1.isRankLower(card2) && card1.isSameSuit(card2)) {
-            return card1.suit;
-         }
-      }
-      if (foundations.Clubs.peek()) {
-         const card1 = foundations.Clubs.peek();
-
-         if (card1.isRankLower(card2) && card1.isSameSuit(card2)) {
-            return card1.suit;
-         }
-      }
-   }
-   return null
-}
-
 
 export function moveFromFoundation(card, tableauPiles, foundations) {
-   const start = 0;
-   const end = tableauPiles.length;
-   const tableauIndex = validMoveToTableau(start, end, card, tableauPiles);
+   const foundationStack = getFoundationStack(foundations, card.suit)
 
-   if (card.suit == 'Hearts') {
-      tableauPiles[tableauIndex].push(foundations.Hearts?.pop())
-   }
-   else if (card.suit == 'Diamonds') {
-      tableauPiles[tableauIndex].push(foundations.Diamonds?.pop())
-   }
-   else if (card.suit == 'Clubs') {
-      tableauPiles[tableauIndex].push(foundations.Clubs?.pop())
-   }
-   else if (card.suit == 'Spades') {
-      tableauPiles[tableauIndex].push(foundations.Spades?.pop())
+   if (!foundationStack || foundationStack.peek() !== card) {
+      return false
    }
 
-   return tableauPiles, foundations;
+   const targetIndex = findValidTableauIndex(card, tableauPiles)
+
+   if (targetIndex === -1) {
+      return false
+   }
+
+   tableauPiles[targetIndex].push(foundationStack.pop())
+   return true
 }
 
-
 export function checkWin (tableauPiles, wastePile, stockPile) {
-   if (!wastePile.peek() && !stockPile.peek()) {
-      for(const tableau in tableauPiles) {
-         const cards = tableau.getCards();
-         for (const { card } in cards) {
-            if (!card.faceUp) {
-               return false;
-            }
-         }
-      }
-      return true;
+   if (wastePile.peek() || stockPile.peek()) {
+      return false
    }
-   return false;
+
+   return tableauPiles.every((tableau) => tableau.isEmpty())
 }
