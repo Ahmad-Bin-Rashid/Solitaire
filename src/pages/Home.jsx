@@ -1,5 +1,6 @@
-import { Box, Button, Center, Heading, VStack, Text, Container } from "@chakra-ui/react"
+import { Box, Button, Center, Heading, VStack, Text, Container, Icon } from "@chakra-ui/react"
 import { Link } from "react-router-dom"
+import { IoPlay, IoInformationCircleOutline } from "react-icons/io5"
 
 
 const Home = () => {
@@ -47,6 +48,7 @@ const Home = () => {
                      variant="solid"
                      borderRadius="xl"
                      _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
+                     leftIcon={<Icon as={IoPlay} />}
                   >
                      Play Game
                   </Button>
@@ -62,6 +64,7 @@ const Home = () => {
                      borderColor="rgba(255,255,255,0.3)"
                      borderRadius="xl"
                      _hover={{ bg: 'rgba(255,255,255,0.1)' }}
+                     leftIcon={<Icon as={IoInformationCircleOutline} />}
                   >
                      How to Play
                   </Button>

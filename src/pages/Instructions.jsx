@@ -1,6 +1,6 @@
 import { Box, Button, Container, Heading, VStack, Text, UnorderedList, ListItem, Icon } from "@chakra-ui/react"
 import { Link } from "react-router-dom"
-import { ArrowBackIcon } from "@chakra-ui/icons"
+import { IoArrowBack, IoPlay } from "react-icons/io5"
 
 const Instructions = () => {
   return (
@@ -27,7 +27,7 @@ const Instructions = () => {
                   color="white" 
                   _hover={{ bg: 'rgba(255,255,255,0.1)' }}
                >
-                  <ArrowBackIcon />
+                  <Icon as={IoArrowBack} boxSize={6} />
                </Button>
                <Heading color="white" size="xl">How to Play</Heading>
             </Box>
@@ -84,6 +84,7 @@ const Instructions = () => {
                size="lg" 
                borderRadius="xl"
                mt={4}
+               rightIcon={<Icon as={IoPlay} />}
             >
                Start Game
             </Button>
