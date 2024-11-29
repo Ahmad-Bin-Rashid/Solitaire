@@ -44,6 +44,16 @@ class Queue {
        return this.front === null;
    }
 
+   clone() {
+       const newQueue = new Queue();
+       let current = this.front;
+       while (current) {
+           newQueue.enqueue(current.card);
+           current = current.next;
+       }
+       return newQueue;
+   }
+
    // Display the elements in the queue
    display() {
        let current = this.front;

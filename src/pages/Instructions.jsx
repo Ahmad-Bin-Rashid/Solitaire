@@ -1,6 +1,6 @@
 import { Box, Button, Container, Heading, VStack, Text, UnorderedList, ListItem, Icon } from "@chakra-ui/react"
 import { Link } from "react-router-dom"
-import { IoArrowBack, IoPlay } from "react-icons/io5"
+import { IoArrowBack } from "react-icons/io5"
 
 const Instructions = () => {
   return (
@@ -84,7 +84,6 @@ const Instructions = () => {
                size="lg" 
                borderRadius="xl"
                mt={4}
-               rightIcon={<Icon as={IoPlay} />}
             >
                Start Game
             </Button>

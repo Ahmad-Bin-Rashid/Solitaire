@@ -61,10 +61,5 @@ class Game {
    }
 }
 
-// let game = new Game();
-// game.initializeGame();
-// game.displayGame();
-// game.displayGame();
-
 
 export default Game

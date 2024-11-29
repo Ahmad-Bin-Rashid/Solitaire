@@ -49,7 +49,16 @@ class Stack {
             current = current.next;
         }
         elements = elements.reverse();
-        return (elements == []) ? null : elements;
+        return (elements.length === 0) ? null : elements;
+    }
+
+    clone() {
+        const newStack = new Stack();
+        const cards = this.getCards();
+        if (cards) {
+            cards.forEach(node => newStack.push(node.card));
+        }
+        return newStack;
     }
 }
 

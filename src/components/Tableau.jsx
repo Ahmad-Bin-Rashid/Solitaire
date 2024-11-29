@@ -17,16 +17,31 @@ const Tableau = ({ cards: pile, onMoveComplete }) => {
       : cardMetrics.cardHeight
 
    const handleClick = (card) => {
-      let tableauPiles = state.tableauPiles
-      let wastePile = state.wastePile
-      let stockPile = state.stockPile
-
+      const game = state.game;
       if (card.faceUp) {
-         let foundationPiles = state.foundationPiles
-         const moved = moveFromTableau(card, pile, tableauPiles, foundationPiles)
+         // Clone state to ensure immutability and trigger re-renders properly
+         const currentTableau = game.tableauPiles.map(p => p.clone());
+         const currentFoundations = {
+            Hearts: game.foundationPiles.Hearts.clone(),
+            Diamonds: game.foundationPiles.Diamonds.clone(),
+            Clubs: game.foundationPiles.Clubs.clone(),
+            Spades: game.foundationPiles.Spades.clone(),
+         };
+         
+         // Find the source pile in our cloned array
+         const sourcePileIndex = game.tableauPiles.indexOf(pile);
+         const sourcePile = currentTableau[sourcePileIndex];
+
+         const moved = moveFromTableau(card, sourcePile, currentTableau, currentFoundations)
 
          if (moved) {
-            dispatch({ type: 'FROM_TABLEAU', payload: { tableauPiles, foundationPiles } })
+            dispatch({ 
+               type: 'FROM_TABLEAU', 
+               payload: { 
+                  tableauPiles: currentTableau, 
+                  foundationPiles: currentFoundations 
+               } 
+            })
             onMoveComplete?.()
          }
       }

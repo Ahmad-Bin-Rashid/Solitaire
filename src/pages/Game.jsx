@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Box, HStack, VStack, useBreakpointValue } from "@chakra-ui/react"
+import { Box, HStack, VStack, useBreakpointValue, Button, ButtonGroup, Icon } from "@chakra-ui/react"
+import { IoArrowBack, IoRefresh, IoArrowBackCircleOutline, IoArrowForwardCircleOutline } from "react-icons/io5"
+import { Link } from "react-router-dom"
 import useGameState from "../hooks/useGameState";
 import Tableau from "../components/Tableau";
 import Foundation from "../components/Foundation";
@@ -13,18 +15,22 @@ import { BOARD_SURFACE_STYLES } from "../styles/layoutStyles";
 const Game = () => {
 
   const { state, dispatch } = useGameState();
+  const game = state.game;
+  const history = state.history;
+  const future = state.future;
+
   const [isGameWon, setIsGameWon] = useState(false);
   const cardMetrics = useBreakpointValue(CARD_PRESETS) ?? CARD_PRESETS.md;
   const boardLayout = useBreakpointValue(BOARD_LAYOUT_PRESETS) ?? BOARD_LAYOUT_PRESETS.md;
   const boardSurface = useBreakpointValue(BOARD_SURFACE_STYLES) ?? BOARD_SURFACE_STYLES.md;
 
-  let tableauPiles = state.tableauPiles;
-  let stockPile = state.stockPile;
-  let wastePile = state.wastePile;
-  let foundationHearts = state.foundationPiles.Hearts;
-  let foundationDiamonds = state.foundationPiles.Diamonds;
-  let foundationSpades = state.foundationPiles.Spades;
-  let foundationClubs = state.foundationPiles.Clubs;
+  let tableauPiles = game.tableauPiles;
+  let stockPile = game.stockPile;
+  let wastePile = game.wastePile;
+  let foundationHearts = game.foundationPiles.Hearts;
+  let foundationDiamonds = game.foundationPiles.Diamonds;
+  let foundationSpades = game.foundationPiles.Spades;
+  let foundationClubs = game.foundationPiles.Clubs;
 
   const evaluateWin = () => {
     if (checkWin(tableauPiles, wastePile, stockPile)) {
@@ -33,36 +39,67 @@ const Game = () => {
   }
 
   const handleStockPile = () => {
-    const moved = moveStockToWaste(stockPile, wastePile)
+    const currentStock = game.stockPile.clone();
+    const currentWaste = game.wastePile.clone();
+    
+    const moved = moveStockToWaste(currentStock, currentWaste)
 
     if (moved) {
-      dispatch({ type: 'FROM_STOCK_TO_WASTE', payload: { stockPile, wastePile } })
+      dispatch({ type: 'FROM_STOCK_TO_WASTE', payload: { stockPile: currentStock, wastePile: currentWaste } })
       evaluateWin()
     }
   }
 
-
-
   const handleWastePile = () => {
-      const foundationPiles = state.foundationPiles
-      const moved = moveFromWaste(tableauPiles, foundationPiles, wastePile)
+      const currentTableau = game.tableauPiles.map(p => p.clone());
+      const currentFoundations = {
+        Hearts: game.foundationPiles.Hearts.clone(),
+        Diamonds: game.foundationPiles.Diamonds.clone(),
+        Clubs: game.foundationPiles.Clubs.clone(),
+        Spades: game.foundationPiles.Spades.clone(),
+      };
+      const currentWaste = game.wastePile.clone();
+
+      const moved = moveFromWaste(currentTableau, currentFoundations, currentWaste)
 
       if (moved) {
-        dispatch({ type: 'FROM_WASTE', payload: {tableauPiles, foundationPiles, wastePile}})
+        dispatch({ type: 'FROM_WASTE', payload: {
+          tableauPiles: currentTableau, 
+          foundationPiles: currentFoundations, 
+          wastePile: currentWaste
+        }})
         evaluateWin()
       }
   }
   
   const handleFoundation = (cards) => {
-    const foundationPiles = state.foundationPiles
-    const moved = moveFromFoundation(cards.peek(), tableauPiles, foundationPiles)
+    const currentTableau = game.tableauPiles.map(p => p.clone());
+    const currentFoundations = {
+      Hearts: game.foundationPiles.Hearts.clone(),
+      Diamonds: game.foundationPiles.Diamonds.clone(),
+      Clubs: game.foundationPiles.Clubs.clone(),
+      Spades: game.foundationPiles.Spades.clone(),
+    };
+
+    const moved = moveFromFoundation(cards.peek(), currentTableau, currentFoundations)
 
     if (moved) {
-      dispatch({ type: 'FROM_FOUNDATION', payload: {tableauPiles, foundationPiles}})
+      dispatch({ type: 'FROM_FOUNDATION', payload: {
+        tableauPiles: currentTableau, 
+        foundationPiles: currentFoundations
+      }})
       evaluateWin()
     }
     
   }
+
+  const handleUndo = () => dispatch({ type: 'UNDO' });
+  const handleRedo = () => dispatch({ type: 'REDO' });
+  const handleRestart = () => {
+     if (window.confirm("Are you sure you want to restart the game?")) {
+        dispatch({ type: 'RESTART' });
+     }
+  };
 
   return (
     <Box
@@ -93,26 +130,70 @@ const Game = () => {
           px={boardLayout.railPaddingX}
           py={boardLayout.railPaddingY}
         >
-          <HStack
-            w="100%"
-            justify="space-between"
-            align="center"
-            spacing={6}
-            flexWrap="wrap"
-            gap={4}
-          >
-            <HStack spacing={{ base: 2, md: 4 }} flexWrap="wrap" justify="center">
-              <Box onClick={() => handleFoundation(foundationHearts)}><Foundation cards={foundationHearts} /></Box>
-              <Box onClick={() => handleFoundation(foundationDiamonds)}><Foundation cards={foundationDiamonds} /></Box>
-              <Box onClick={() => handleFoundation(foundationClubs)}><Foundation cards={foundationClubs} /></Box>
-              <Box onClick={() => handleFoundation(foundationSpades)}><Foundation cards={foundationSpades} /></Box>
+          <VStack spacing={4}>
+            {/* Top Toolbar */}
+            <HStack w="100%" justify="space-between">
+              <Button 
+                as={Link} 
+                to="/" 
+                variant="ghost" 
+                color="whiteAlpha.800"
+                leftIcon={<Icon as={IoArrowBack} />}
+                _hover={{ bg: 'rgba(255,255,255,0.1)' }}
+              >
+                Back
+              </Button>
+
+              <ButtonGroup size="sm" isAttached variant="outline" colorScheme="whiteAlpha">
+                <Button 
+                  onClick={handleUndo} 
+                  isDisabled={history.length === 0}
+                  leftIcon={<Icon as={IoArrowBackCircleOutline} />}
+                >
+                  Undo
+                </Button>
+                <Button 
+                  onClick={handleRedo} 
+                  isDisabled={future.length === 0}
+                  rightIcon={<Icon as={IoArrowForwardCircleOutline} />}
+                >
+                  Redo
+                </Button>
+              </ButtonGroup>
+
+              <Button 
+                size="sm" 
+                color="whiteAlpha.800" 
+                variant="ghost" 
+                _hover={{ bg: 'rgba(255,255,255,0.1)' }}
+                onClick={handleRestart}
+                leftIcon={<Icon as={IoRefresh} />}
+              >
+                Restart
+              </Button>
             </HStack>
 
-            <HStack spacing={{ base: 2, md: 4 }}>
-              <Box onClick={handleWastePile}><WastePile cards={wastePile} /></Box>
-              <Box onClick={handleStockPile}><StockPile cards={stockPile} /></Box>
+            <HStack
+              w="100%"
+              justify="space-between"
+              align="center"
+              spacing={6}
+              flexWrap="wrap"
+              gap={4}
+            >
+              <HStack spacing={{ base: 2, md: 4 }} flexWrap="wrap" justify="center">
+                <Box onClick={() => handleFoundation(foundationHearts)}><Foundation cards={foundationHearts} /></Box>
+                <Box onClick={() => handleFoundation(foundationDiamonds)}><Foundation cards={foundationDiamonds} /></Box>
+                <Box onClick={() => handleFoundation(foundationClubs)}><Foundation cards={foundationClubs} /></Box>
+                <Box onClick={() => handleFoundation(foundationSpades)}><Foundation cards={foundationSpades} /></Box>
+              </HStack>
+
+              <HStack spacing={{ base: 2, md: 4 }}>
+                <Box onClick={handleWastePile}><WastePile cards={wastePile} /></Box>
+                <Box onClick={handleStockPile}><StockPile cards={stockPile} /></Box>
+              </HStack>
             </HStack>
-          </HStack>
+          </VStack>
         </Box>
 
         <Box
