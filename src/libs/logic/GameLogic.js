@@ -2,7 +2,7 @@ function getFoundationStack(foundations, suit) {
    return foundations[suit] ?? null
 }
 
-function canPlaceOnFoundation(card, foundationStack) {
+export function canPlaceOnFoundation(card, foundationStack) {
    if (!foundationStack) {
       return false
    }
@@ -16,7 +16,7 @@ function canPlaceOnFoundation(card, foundationStack) {
    return foundationTop.isSameSuit(card) && foundationTop.isRankLower(card)
 }
 
-function canPlaceOnTableau(card, tableauStack) {
+export function canPlaceOnTableau(card, tableauStack) {
    const tableauTop = tableauStack.peek()
 
    if (!tableauTop) {
@@ -40,7 +40,7 @@ function findValidTableauIndex(card, tableauPiles, sourceIndex = -1) {
    return -1
 }
 
-function canMoveSequenceToTableau(sequence) {
+export function canMoveSequenceToTableau(sequence) {
    if (!sequence.length) {
       return false
    }
@@ -66,6 +66,86 @@ function canMoveSequenceToTableau(sequence) {
 
 function revealTopCard(tableau) {
    tableau.peek()?.faceUpCard()
+}
+
+export function moveTableauToTableau(card, sourceTableau, targetTableau) {
+   const sourceCards = sourceTableau.getCards() ?? []
+   const movingIndex = sourceCards.findIndex((node) => node.card === card)
+
+   if (movingIndex === -1) {
+      return false
+   }
+
+   const movingCards = sourceCards.slice(movingIndex).map((node) => node.card)
+
+   if (!canMoveSequenceToTableau(movingCards) || !canPlaceOnTableau(movingCards[0], targetTableau)) {
+      return false
+   }
+
+   const cardsToMove = []
+
+   for (let i = 0; i < movingCards.length; i++) {
+      cardsToMove.unshift(sourceTableau.pop())
+   }
+
+   cardsToMove.forEach((movingCard) => {
+      targetTableau.push(movingCard)
+   })
+
+   revealTopCard(sourceTableau)
+   return true
+}
+
+export function moveWasteToTableau(wastePile, targetTableau) {
+   const card = wastePile.peek()
+
+   if (!card || !canPlaceOnTableau(card, targetTableau)) {
+      return false
+   }
+
+   targetTableau.push(wastePile.pop())
+   return true
+}
+
+export function moveFoundationToTableau(foundationStack, targetTableau) {
+   const card = foundationStack.peek()
+
+   if (!card || !canPlaceOnTableau(card, targetTableau)) {
+      return false
+   }
+
+   targetTableau.push(foundationStack.pop())
+   return true
+}
+
+export function moveTableauToFoundation(card, sourceTableau, foundationStack) {
+   const sourceCards = sourceTableau.getCards() ?? []
+   const movingIndex = sourceCards.findIndex((node) => node.card === card)
+
+   if (movingIndex === -1) {
+      return false
+   }
+
+   const movingCards = sourceCards.slice(movingIndex).map((node) => node.card)
+
+   if (movingCards.length !== 1 || !canPlaceOnFoundation(card, foundationStack)) {
+      return false
+   }
+
+   foundationStack.push(sourceTableau.pop())
+   revealTopCard(sourceTableau)
+   return true
+}
+
+export function moveWasteToFoundation(wastePile, foundationStack) {
+   const card = wastePile.peek()
+
+   if (!card || !canPlaceOnFoundation(card, foundationStack)) {
+      return false
+   }
+
+   foundationStack.push(wastePile.pop())
+   return true
 }
 
 export function moveStockToWaste(stockPile, wastePile) {

@@ -5,7 +5,7 @@ import PlayingCard from "./PlayingCard";
 import { CARD_PRESETS } from "../styles/cardStyles";
 
 
-const Tableau = ({ cards: pile, onMoveComplete }) => {
+const Tableau = ({ cards: pile, pileIndex, onMoveComplete, onCardDragStart, onCardDragEnd }) => {
 
    const { state, dispatch } = useGameState();
    const cardMetrics = useBreakpointValue(CARD_PRESETS) ?? CARD_PRESETS.md;
@@ -35,6 +35,12 @@ const Tableau = ({ cards: pile, onMoveComplete }) => {
          const moved = moveFromTableau(card, sourcePile, currentTableau, currentFoundations)
 
          if (moved) {
+            const nextGame = {
+               ...game,
+               tableauPiles: currentTableau,
+               foundationPiles: currentFoundations,
+            }
+
             dispatch({ 
                type: 'FROM_TABLEAU', 
                payload: { 
@@ -42,7 +48,7 @@ const Tableau = ({ cards: pile, onMoveComplete }) => {
                   foundationPiles: currentFoundations 
                } 
             })
-            onMoveComplete?.()
+            onMoveComplete?.(nextGame)
          }
       }
    }
@@ -51,6 +57,7 @@ const Tableau = ({ cards: pile, onMoveComplete }) => {
          {pile.peek() ? cards.map(({ card }, index) => (
             <PlayingCard
                key={card.rank + card.suit}
+               layoutId={`${card.rank}-${card.suit}`}
                src={card.faceUp ? `${card.rank}-${card.suit}.png` : 'card-bg.png'}
                position="absolute"
                top={`${index * cardSpacing}px`}
@@ -59,6 +66,9 @@ const Tableau = ({ cards: pile, onMoveComplete }) => {
                metrics={cardMetrics}
                isClickable={card.faceUp}
                onClick={() => handleClick(card)}
+               draggable={card.faceUp}
+               onDragStart={(event) => onCardDragStart?.({ sourceType: 'tableau', pileIndex, card }, event)}
+               onDragEnd={onCardDragEnd}
             />
 
          )) : (

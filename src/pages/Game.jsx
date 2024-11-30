@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Box, HStack, VStack, useBreakpointValue, Button, ButtonGroup, Icon } from "@chakra-ui/react"
+import { LayoutGroup } from "framer-motion";
 import { IoArrowBack, IoRefresh, IoArrowBackCircleOutline, IoArrowForwardCircleOutline } from "react-icons/io5"
 import { Link } from "react-router-dom"
 import useGameState from "../hooks/useGameState";
@@ -7,7 +8,20 @@ import Tableau from "../components/Tableau";
 import Foundation from "../components/Foundation";
 import WastePile from "../components/WastePile";
 import StockPile from "../components/StockPile";
-import { checkWin, moveFromFoundation, moveFromWaste, moveStockToWaste } from "../libs/logic/GameLogic";
+import {
+  checkWin,
+  canPlaceOnFoundation,
+  canPlaceOnTableau,
+  canMoveSequenceToTableau,
+  moveFoundationToTableau,
+  moveFromFoundation,
+  moveFromWaste,
+  moveStockToWaste,
+  moveTableauToFoundation,
+  moveTableauToTableau,
+  moveWasteToFoundation,
+  moveWasteToTableau,
+} from "../libs/logic/GameLogic";
 import GameCompletionModal from "../components/GameCompletionModal";
 import { BOARD_LAYOUT_PRESETS, CARD_PRESETS } from "../styles/cardStyles";
 import { BOARD_SURFACE_STYLES } from "../styles/layoutStyles";
@@ -20,6 +34,8 @@ const Game = () => {
   const future = state.future;
 
   const [isGameWon, setIsGameWon] = useState(false);
+  const [dragState, setDragState] = useState(null);
+  const [hoveredDropTarget, setHoveredDropTarget] = useState(null);
   const cardMetrics = useBreakpointValue(CARD_PRESETS) ?? CARD_PRESETS.md;
   const boardLayout = useBreakpointValue(BOARD_LAYOUT_PRESETS) ?? BOARD_LAYOUT_PRESETS.md;
   const boardSurface = useBreakpointValue(BOARD_SURFACE_STYLES) ?? BOARD_SURFACE_STYLES.md;
@@ -32,11 +48,181 @@ const Game = () => {
   let foundationSpades = game.foundationPiles.Spades;
   let foundationClubs = game.foundationPiles.Clubs;
 
-  const evaluateWin = () => {
-    if (checkWin(tableauPiles, wastePile, stockPile)) {
+  const cloneFoundationPiles = (sourceFoundations) => ({
+    Hearts: sourceFoundations.Hearts.clone(),
+    Diamonds: sourceFoundations.Diamonds.clone(),
+    Clubs: sourceFoundations.Clubs.clone(),
+    Spades: sourceFoundations.Spades.clone(),
+  });
+
+  const clearDragState = () => {
+    setDragState(null);
+    setHoveredDropTarget(null);
+  };
+
+  const evaluateWin = (nextGame = game) => {
+    if (checkWin(nextGame.tableauPiles, nextGame.wastePile, nextGame.stockPile)) {
       setIsGameWon(true)
     }
   }
+
+  const getDraggedSequence = () => {
+    if (!dragState || dragState.sourceType !== 'tableau') {
+      return dragState?.card ? [dragState.card] : []
+    }
+
+    const sourcePile = game.tableauPiles[dragState.pileIndex]
+    const sourceCards = sourcePile?.getCards() ?? []
+    const movingIndex = sourceCards.findIndex((node) => node.card === dragState.card)
+
+    if (movingIndex === -1) {
+      return []
+    }
+
+    return sourceCards.slice(movingIndex).map((node) => node.card)
+  }
+
+  const canDropOnTableau = (targetPile) => {
+    if (!dragState) {
+      return false
+    }
+
+    if (dragState.sourceType === 'tableau') {
+      const sequence = getDraggedSequence()
+
+      return sequence.length > 0 && canMoveSequenceToTableau(sequence) && canPlaceOnTableau(sequence[0], targetPile)
+    }
+
+    return canPlaceOnTableau(dragState.card, targetPile)
+  }
+
+  const canDropOnFoundation = (suit, targetFoundation) => {
+    if (!dragState || dragState.sourceType === 'foundation' || dragState.card.suit !== suit) {
+      return false
+    }
+
+    if (dragState.sourceType === 'tableau' && getDraggedSequence().length !== 1) {
+      return false
+    }
+
+    return canPlaceOnFoundation(dragState.card, targetFoundation)
+  }
+
+  const handleCardDragStart = (dragInfo, event) => {
+    setIsGameWon(false)
+    setDragState(dragInfo)
+    setHoveredDropTarget(null)
+
+    if (event?.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move'
+      event.dataTransfer.setData('text/plain', 'solitaire')
+    }
+  }
+
+  const handleCardDragEnd = () => {
+    clearDragState()
+  }
+
+  const handleFoundationDrop = (suit) => {
+    if (!dragState) {
+      return
+    }
+
+    const currentTableau = game.tableauPiles.map((pile) => pile.clone())
+    const currentFoundations = cloneFoundationPiles(game.foundationPiles)
+    const currentWaste = game.wastePile.clone()
+    const targetFoundation = currentFoundations[suit]
+    let moved = false
+
+    if (dragState.sourceType === 'tableau') {
+      const sourcePile = currentTableau[dragState.pileIndex]
+      moved = moveTableauToFoundation(dragState.card, sourcePile, targetFoundation)
+    } else if (dragState.sourceType === 'waste') {
+      moved = moveWasteToFoundation(currentWaste, targetFoundation)
+    }
+
+    if (moved) {
+      dispatch({
+        type: dragState.sourceType === 'waste' ? 'FROM_WASTE' : 'FROM_TABLEAU',
+        payload: {
+          tableauPiles: currentTableau,
+          foundationPiles: currentFoundations,
+          wastePile: currentWaste,
+        },
+      })
+
+      evaluateWin({
+        ...game,
+        tableauPiles: currentTableau,
+        foundationPiles: currentFoundations,
+        wastePile: currentWaste,
+      })
+    }
+
+    clearDragState()
+  }
+
+  const handleTableauDrop = (targetIndex) => {
+    if (!dragState) {
+      return
+    }
+
+    const currentTableau = game.tableauPiles.map((pile) => pile.clone())
+    const currentFoundations = cloneFoundationPiles(game.foundationPiles)
+    const currentWaste = game.wastePile.clone()
+    const targetPile = currentTableau[targetIndex]
+    let moved = false
+
+    if (dragState.sourceType === 'tableau') {
+      const sourcePile = currentTableau[dragState.pileIndex]
+      moved = moveTableauToTableau(dragState.card, sourcePile, targetPile)
+    } else if (dragState.sourceType === 'waste') {
+      moved = moveWasteToTableau(currentWaste, targetPile)
+    } else if (dragState.sourceType === 'foundation') {
+      const sourceFoundation = currentFoundations[dragState.card.suit]
+      moved = moveFoundationToTableau(sourceFoundation, targetPile)
+    }
+
+    if (moved) {
+      dispatch({
+        type: dragState.sourceType === 'waste'
+          ? 'FROM_WASTE'
+          : dragState.sourceType === 'foundation'
+            ? 'FROM_FOUNDATION'
+            : 'FROM_TABLEAU',
+        payload: {
+          tableauPiles: currentTableau,
+          foundationPiles: currentFoundations,
+          wastePile: currentWaste,
+        },
+      })
+
+      evaluateWin({
+        ...game,
+        tableauPiles: currentTableau,
+        foundationPiles: currentFoundations,
+        wastePile: currentWaste,
+      })
+    }
+
+    clearDragState()
+  }
+
+  const getDropZoneStyles = (isValid, isHovered) => ({
+    border: isHovered
+      ? '1px solid rgba(168, 255, 214, 0.95)'
+      : isValid
+        ? '1px dashed rgba(168, 255, 214, 0.55)'
+        : '1px solid transparent',
+    boxShadow: isHovered
+      ? '0 0 0 3px rgba(168, 255, 214, 0.24), 0 0 24px rgba(168, 255, 214, 0.16)'
+      : isValid
+        ? '0 0 0 2px rgba(168, 255, 214, 0.08)'
+        : 'none',
+    bg: isHovered ? 'rgba(168, 255, 214, 0.08)' : 'transparent',
+    transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
+    transition: 'all 140ms ease',
+  })
 
   const handleStockPile = () => {
     const currentStock = game.stockPile.clone();
@@ -45,8 +231,8 @@ const Game = () => {
     const moved = moveStockToWaste(currentStock, currentWaste)
 
     if (moved) {
-      dispatch({ type: 'FROM_STOCK_TO_WASTE', payload: { stockPile: currentStock, wastePile: currentWaste } })
-      evaluateWin()
+          dispatch({ type: 'FROM_STOCK_TO_WASTE', payload: { stockPile: currentStock, wastePile: currentWaste } })
+          evaluateWin({ ...game, stockPile: currentStock, wastePile: currentWaste })
     }
   }
 
@@ -68,7 +254,12 @@ const Game = () => {
           foundationPiles: currentFoundations, 
           wastePile: currentWaste
         }})
-        evaluateWin()
+        evaluateWin({
+          ...game,
+          tableauPiles: currentTableau,
+          foundationPiles: currentFoundations,
+          wastePile: currentWaste,
+        })
       }
   }
   
@@ -88,48 +279,63 @@ const Game = () => {
         tableauPiles: currentTableau, 
         foundationPiles: currentFoundations
       }})
-      evaluateWin()
+      evaluateWin({
+        ...game,
+        tableauPiles: currentTableau,
+        foundationPiles: currentFoundations,
+      })
     }
     
   }
 
-  const handleUndo = () => dispatch({ type: 'UNDO' });
-  const handleRedo = () => dispatch({ type: 'REDO' });
+  const handleUndo = () => {
+    clearDragState();
+    setIsGameWon(false);
+    dispatch({ type: 'UNDO' });
+  };
+  const handleRedo = () => {
+    clearDragState();
+    setIsGameWon(false);
+    dispatch({ type: 'REDO' });
+  };
   const handleRestart = () => {
      if (window.confirm("Are you sure you want to restart the game?")) {
+        clearDragState();
+        setIsGameWon(false);
         dispatch({ type: 'RESTART' });
      }
   };
 
   return (
-    <Box
-      minH="100vh"
-      width="100%"
-      bg={boardSurface.shellBg}
-      position="relative"
-      px={boardLayout.pagePaddingX}
-      py={boardLayout.pagePaddingY}
-    >
-      <VStack
+    <LayoutGroup id="solitaire-board">
+      <Box
+        minH="100vh"
+        width="100%"
+        bg={boardSurface.shellBg}
         position="relative"
-        zIndex={1}
-        minH="calc(100vh - 48px)"
-        spacing={boardLayout.surfaceGap}
-        align="stretch"
-        justify="space-between"
-        maxW="1280px"
-        mx="auto"
-        w="100%"
+        px={boardLayout.pagePaddingX}
+        py={boardLayout.pagePaddingY}
       >
-        <Box
-          bg={boardSurface.railBg}
-          border="1px solid rgba(255, 255, 255, 0.14)"
-          borderRadius={boardLayout.railRadius}
-          boxShadow="0 18px 50px rgba(0, 0, 0, 0.28)"
-          backdropFilter="blur(10px)"
-          px={boardLayout.railPaddingX}
-          py={boardLayout.railPaddingY}
+        <VStack
+          position="relative"
+          zIndex={1}
+          minH="calc(100vh - 48px)"
+          spacing={boardLayout.surfaceGap}
+          align="stretch"
+          justify="space-between"
+          maxW="1280px"
+          mx="auto"
+          w="100%"
         >
+          <Box
+            bg={boardSurface.railBg}
+            border="1px solid rgba(255, 255, 255, 0.14)"
+            borderRadius={boardLayout.railRadius}
+            boxShadow="0 18px 50px rgba(0, 0, 0, 0.28)"
+            backdropFilter="blur(10px)"
+            px={boardLayout.railPaddingX}
+            py={boardLayout.railPaddingY}
+          >
           <VStack spacing={4}>
             {/* Top Toolbar */}
             <HStack w="100%" justify="space-between">
@@ -182,10 +388,43 @@ const Game = () => {
               gap={4}
             >
               <HStack spacing={{ base: 2, md: 4 }} flexWrap="wrap" justify="center">
-                <Box onClick={() => handleFoundation(foundationHearts)}><Foundation cards={foundationHearts} /></Box>
-                <Box onClick={() => handleFoundation(foundationDiamonds)}><Foundation cards={foundationDiamonds} /></Box>
-                <Box onClick={() => handleFoundation(foundationClubs)}><Foundation cards={foundationClubs} /></Box>
-                <Box onClick={() => handleFoundation(foundationSpades)}><Foundation cards={foundationSpades} /></Box>
+                {[
+                  ['Hearts', foundationHearts],
+                  ['Diamonds', foundationDiamonds],
+                  ['Clubs', foundationClubs],
+                  ['Spades', foundationSpades],
+                ].map(([suit, cards]) => {
+                  const isValid = canDropOnFoundation(suit, cards)
+                  const isHovered = hoveredDropTarget?.type === 'foundation' && hoveredDropTarget?.id === suit
+
+                  return (
+                    <Box
+                      key={suit}
+                      onClick={() => handleFoundation(cards)}
+                      onDragEnter={() => isValid && setHoveredDropTarget({ type: 'foundation', id: suit })}
+                      onDragLeave={() => isHovered && setHoveredDropTarget(null)}
+                      onDragOver={(event) => {
+                        if (isValid) {
+                          event.preventDefault()
+                          event.dataTransfer.dropEffect = 'move'
+                          setHoveredDropTarget({ type: 'foundation', id: suit })
+                        }
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault()
+                        handleFoundationDrop(suit)
+                      }}
+                      {...getDropZoneStyles(isValid, isHovered)}
+                      borderRadius="lg"
+                    >
+                      <Foundation
+                        cards={cards}
+                        onCardDragStart={handleCardDragStart}
+                        onCardDragEnd={handleCardDragEnd}
+                      />
+                    </Box>
+                  )
+                })}
               </HStack>
 
               <HStack spacing={{ base: 2, md: 4 }}>
@@ -194,45 +433,72 @@ const Game = () => {
               </HStack>
             </HStack>
           </VStack>
-        </Box>
+          </Box>
 
-        <Box
-          flex="1"
-          bg={boardSurface.boardBg}
-          border="1px solid rgba(255, 255, 255, 0.12)"
-          borderRadius={boardLayout.boardRadius}
-          boxShadow="0 24px 70px rgba(0, 0, 0, 0.28)"
-          backdropFilter="blur(8px)"
-          px={boardLayout.boardPaddingX}
-          py={boardLayout.boardPaddingY}
-          display="flex"
-          alignItems="flex-start"
-          overflowX={{ base: "auto", md: "visible" }}
-        >
-          <HStack
-            w="100%"
-            align="flex-start"
-            justify={{ base: "flex-start", md: "center" }}
-            spacing={{ base: 2, md: cardMetrics.boardGap }}
-            flexWrap="nowrap"
-            minW="max-content"
+          <Box
+            flex="1"
+            bg={boardSurface.boardBg}
+            border="1px solid rgba(255, 255, 255, 0.12)"
+            borderRadius={boardLayout.boardRadius}
+            boxShadow="0 24px 70px rgba(0, 0, 0, 0.28)"
+            backdropFilter="blur(8px)"
+            px={boardLayout.boardPaddingX}
+            py={boardLayout.boardPaddingY}
+            display="flex"
+            alignItems="flex-start"
+            overflowX={{ base: "auto", md: "visible" }}
           >
-            {tableauPiles && tableauPiles.map((pile) => (
-              <Box
-                key={pile.top?.card ? pile.top.card.rank + pile.top.card.suit : (Math.random() * 100).toString()}
-                position="relative"
-                width={`${cardMetrics.cardWidth}px`}
-                flex={`0 0 ${cardMetrics.cardWidth}px`}
-              >
-                <Tableau cards={pile} onMoveComplete={evaluateWin} />
-              </Box>
-            ))}
-          </HStack>
-        </Box>
-      </VStack>
+            <HStack
+              w="100%"
+              align="flex-start"
+              justify={{ base: "flex-start", md: "center" }}
+              spacing={{ base: 2, md: cardMetrics.boardGap }}
+              flexWrap="nowrap"
+              minW="max-content"
+            >
+              {tableauPiles && tableauPiles.map((pile, index) => {
+                const isValid = canDropOnTableau(pile)
+                const isHovered = hoveredDropTarget?.type === 'tableau' && hoveredDropTarget?.id === index
 
-      <GameCompletionModal isOpen={isGameWon} onClose={() => setIsGameWon(false)} />
-    </Box>
+                return (
+                  <Box
+                    key={index}
+                    position="relative"
+                    width={`${cardMetrics.cardWidth}px`}
+                    flex={`0 0 ${cardMetrics.cardWidth}px`}
+                    onDragEnter={() => isValid && setHoveredDropTarget({ type: 'tableau', id: index })}
+                    onDragLeave={() => isHovered && setHoveredDropTarget(null)}
+                    onDragOver={(event) => {
+                      if (isValid) {
+                        event.preventDefault()
+                        event.dataTransfer.dropEffect = 'move'
+                        setHoveredDropTarget({ type: 'tableau', id: index })
+                      }
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault()
+                      handleTableauDrop(index)
+                    }}
+                    {...getDropZoneStyles(isValid, isHovered)}
+                    borderRadius="lg"
+                  >
+                    <Tableau
+                      cards={pile}
+                      pileIndex={index}
+                      onMoveComplete={evaluateWin}
+                      onCardDragStart={handleCardDragStart}
+                      onCardDragEnd={handleCardDragEnd}
+                    />
+                  </Box>
+                )
+              })}
+            </HStack>
+          </Box>
+        </VStack>
+
+        <GameCompletionModal isOpen={isGameWon} onClose={() => setIsGameWon(false)} />
+      </Box>
+    </LayoutGroup>
   )
 }
 
