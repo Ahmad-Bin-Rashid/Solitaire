@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Box, HStack, VStack, useBreakpointValue, Button, ButtonGroup, Icon } from "@chakra-ui/react"
 import { LayoutGroup } from "framer-motion";
 import { IoArrowBack, IoRefresh, IoArrowBackCircleOutline, IoArrowForwardCircleOutline } from "react-icons/io5"
@@ -21,6 +21,7 @@ import {
   moveTableauToTableau,
   moveWasteToFoundation,
   moveWasteToTableau,
+  canAutoComplete,
 } from "../libs/logic/GameLogic";
 import GameCompletionModal from "../components/GameCompletionModal";
 import { BOARD_LAYOUT_PRESETS, CARD_PRESETS } from "../styles/cardStyles";
@@ -59,6 +60,44 @@ const Game = () => {
     setDragState(null);
     setHoveredDropTarget(null);
   };
+
+  useEffect(() => {
+    if (!isGameWon && canAutoComplete(tableauPiles, wastePile, stockPile)) {
+      const timer = setTimeout(() => {
+        const currentTableau = game.tableauPiles.map(p => p.clone());
+        const currentFoundations = cloneFoundationPiles(game.foundationPiles);
+        let moved = false;
+
+        for (let i = 0; i < currentTableau.length; i++) {
+          const sourcePile = currentTableau[i];
+          const topCard = sourcePile.peek();
+          if (!topCard) continue;
+
+          const targetFoundation = currentFoundations[topCard.suit];
+          if (canPlaceOnFoundation(topCard, targetFoundation)) {
+             targetFoundation.push(sourcePile.pop());
+             moved = true;
+             break;
+          }
+        }
+
+        if (moved) {
+          dispatch({
+            type: 'FROM_TABLEAU',
+            payload: {
+              tableauPiles: currentTableau,
+              foundationPiles: currentFoundations,
+            }
+          });
+          
+          if (checkWin(currentTableau, wastePile, stockPile)) {
+             setIsGameWon(true);
+          }
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [game, isGameWon, tableauPiles, wastePile, stockPile]);
 
   const evaluateWin = (nextGame = game) => {
     if (checkWin(nextGame.tableauPiles, nextGame.wastePile, nextGame.stockPile)) {
@@ -428,7 +467,13 @@ const Game = () => {
               </HStack>
 
               <HStack spacing={{ base: 2, md: 4 }}>
-                <Box onClick={handleWastePile}><WastePile cards={wastePile} /></Box>
+                <Box onClick={handleWastePile}>
+                  <WastePile 
+                    cards={wastePile} 
+                    onCardDragStart={handleCardDragStart}
+                    onCardDragEnd={handleCardDragEnd}
+                  />
+                </Box>
                 <Box onClick={handleStockPile}><StockPile cards={stockPile} /></Box>
               </HStack>
             </HStack>
@@ -496,7 +541,7 @@ const Game = () => {
           </Box>
         </VStack>
 
-        <GameCompletionModal isOpen={isGameWon} onClose={() => setIsGameWon(false)} />
+        <GameCompletionModal isOpen={isGameWon} onClose={() => setIsGameWon(false)} onRestart={handleRestart} />
       </Box>
     </LayoutGroup>
   )

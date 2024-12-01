@@ -5,26 +5,34 @@ import { IoPlay, IoInformationCircleOutline } from "react-icons/io5"
 
 const Home = () => {
    return (
-      <Box 
-         minH={'100vh'} 
+      <Box
+         minH={'100vh'}
          bg={'radial-gradient(circle, #1a472a 0%, #0d2b1a 100%)'}
          display="flex"
          alignItems="center"
          justifyContent="center"
       >
          <Container maxW="container.md" centerContent>
-            <VStack 
-               spacing={10} 
-               p={12} 
-               bg="rgba(255, 255, 255, 0.05)" 
+            <VStack
+               spacing={10}
+               p={12}
+               bg="rgba(255, 255, 255, 0.05)"
                backdropFilter="blur(10px)"
                borderRadius="3xl"
                border="1px solid rgba(255, 255, 255, 0.1)"
                boxShadow="2xl"
             >
                <VStack spacing={2}>
-                  <Heading 
-                     fontSize={{ base: "5xl", md: "7xl" }} 
+                  <Heading
+                     fontSize={{ base: "3xl", md: "5xl" }}
+                     color="white"
+                     letterSpacing="wider"
+                     textShadow="0 4px 12px rgba(0,0,0,0.3)"
+                  >
+                     Klondike
+                  </Heading>
+                  <Heading
+                     fontSize={{ base: "5xl", md: "7xl" }}
                      color="white"
                      letterSpacing="wider"
                      textShadow="0 4px 12px rgba(0,0,0,0.3)"
@@ -37,9 +45,9 @@ const Home = () => {
                </VStack>
 
                <VStack spacing={4} w="full">
-                  <Button 
-                     as={Link} 
-                     to={'/game'} 
+                  <Button
+                     as={Link}
+                     to={'/game'}
                      size="lg"
                      w="full"
                      py={8}
@@ -48,13 +56,13 @@ const Home = () => {
                      variant="solid"
                      borderRadius="xl"
                      _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
-                     leftIcon={<Icon as={IoPlay} />}
+                  // leftIcon={<Icon as={IoPlay} />}
                   >
                      Play Game
                   </Button>
-                  <Button 
-                     as={Link} 
-                     to={'/instructions'} 
+                  <Button
+                     as={Link}
+                     to={'/instructions'}
                      size="lg"
                      w="full"
                      py={8}
@@ -64,14 +72,14 @@ const Home = () => {
                      borderColor="rgba(255,255,255,0.3)"
                      borderRadius="xl"
                      _hover={{ bg: 'rgba(255,255,255,0.1)' }}
-                     leftIcon={<Icon as={IoInformationCircleOutline} />}
+                  // leftIcon={<Icon as={IoInformationCircleOutline} />}
                   >
                      How to Play
                   </Button>
                </VStack>
             </VStack>
          </Container>
-      </Box>
+      </Box >
    )
 }
 

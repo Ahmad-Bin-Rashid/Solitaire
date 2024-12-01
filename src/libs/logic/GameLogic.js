@@ -265,3 +265,23 @@ export function checkWin (tableauPiles, wastePile, stockPile) {
 
    return tableauPiles.every((tableau) => tableau.isEmpty())
 }
+
+export function canAutoComplete(tableauPiles, wastePile, stockPile) {
+   if (wastePile.peek() || stockPile.peek()) {
+      return false
+   }
+
+   for (let tableau of tableauPiles) {
+      const cards = tableau.getCards() ?? []
+      for (let node of cards) {
+         if (!node.card.faceUp) {
+            return false
+         }
+      }
+   }
+
+   const hasCardsInTableau = tableauPiles.some(tableau => !tableau.isEmpty())
+   if (!hasCardsInTableau) return false
+
+   return true
+}
